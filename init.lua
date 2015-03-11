@@ -15,7 +15,7 @@ function _M.init()
 end
 
 function _M.cron()
-  db_query('DELETE FROM nonce WHERE ? > created + ?', time(), config.nonce_ttl or 2*60)
+  db_query('DELETE FROM oauth2_nonce WHERE ? > created + ?', time(), config.nonce_ttl or 2*60)
 end
 
 function _M.route()
