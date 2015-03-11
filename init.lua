@@ -7,7 +7,7 @@ local seawolf = require 'seawolf'.__build('contrib', 'text')
 local config = settings.oauth2
 local xtable, time = seawolf.contrib.seawolf_table, os.time
 local explode, env, tonumber = seawolf.text.explode, env, tonumber
-local empty, goto = seawolf.variable.empty, goto
+local empty, goto, site = seawolf.variable.empty, goto, settings.site
 local db_query
 
 function _M.init()
@@ -67,7 +67,7 @@ function _M.get_authcodes(code)
     code = code,
     client_id = config.client_id,
     client_secret = config.client_secret,
-    redirect_uri = ('%s://%s/oauth2/callback'):format(config.callback_scheme or 'http', _SERVER 'SERVER_NAME'),
+    redirect_uri = ('%s://%s/oauth2/callback'):format(site.scheme or 'http', _SERVER 'SERVER_NAME'),
     grant_type = 'authorization_code',
   }
   local response = {}
@@ -182,7 +182,7 @@ function theme.oauth2_connect(variables)
   local params = {
     scope = 'https://www.googleapis.com/auth/analytics.readonly',
     state = _M.get_nonce(variables.resource),
-    redirect_uri = ('http://%s/oauth2/callback'):format(_SERVER 'SERVER_NAME'),
+    redirect_uri = ('%s://%s/oauth2/callback'):format(site.scheme or 'http', _SERVER 'SERVER_NAME'),
     response_type = 'code',
     client_id = config.client_id,
     access_type = 'offline',
