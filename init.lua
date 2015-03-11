@@ -67,7 +67,7 @@ function _M.get_authcodes(code)
     code = code,
     client_id = config.client_id,
     client_secret = config.client_secret,
-    redirect_uri = ('http://%s/oauth2/callback'):format(_SERVER 'SERVER_NAME'),
+    redirect_uri = ('%s://%s/oauth2/callback'):format(config.callback_scheme or 'http', _SERVER 'SERVER_NAME'),
     grant_type = 'authorization_code',
   }
   local response = {}

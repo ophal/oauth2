@@ -24,5 +24,6 @@ settings.oauth2 = {
   nonce_ttl = 2*60, -- default: 2 minutes
   client_id = [client_id],
   client_secret = [client_secret],
+  callback_scheme = 'http', -- (Optional) Set it to 'https' when required
 }
 ```
