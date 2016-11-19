@@ -24,6 +24,24 @@ CREATE INDEX idx_oauth2_google_token_user_id ON oauth2_google_token USING btree 
 CREATE INDEX idx_oauth2_google_token_rucct ON oauth2_google_token USING btree (resource COLLATE pg_catalog."default", user_id, created, changed, ttl);
 ```
 
+### Facebook
+
+Run the following SQL queries in strict order:
+
+```SQL
+-- SQLite3
+CREATE TABLE oauth2_facebook_nonce(id CHAR(36) PRIMARY KEY, created UNSIGNED BIG INT);
+CREATE TABLE oauth2_facebook_users(fb_id UNSIGNED BIG INT, user_id UNSIGNED BIG INT, created UNSIGNED BIG INT);
+CREATE UNIQUE INDEX uidx_oauth2_token_fu ON oauth2_facebook_users(fb_id, user_id);
+```
+
+```SQL
+-- PostgreSQL
+CREATE TABLE oauth2_facebook_nonce(id char (36) PRIMARY KEY NOT NULL, created bigint NOT NULL);
+CREATE TABLE oauth2_facebook_users(fb_id BIGINT NOT NULL, user_id BIGINT NOT NULL, created BIGINT NOT NULL);
+CREATE UNIQUE INDEX uidx_oauth2_token_fu ON oauth2_facebook_users USING btree (fb_id, user_id);
+```
+
 ## Configuration
 
 Open your app in Google Developer Console(https://console.developers.google.com),
@@ -38,6 +56,10 @@ settings.oauth2 = {
   google = {
     client_id = [g_client_id],
     client_secret = [g_client_secret],
+  },
+  facebook = {
+    client_id = [fb_client_id],
+    client_secret = [fb_client_secret],
   },
 }
 ```
