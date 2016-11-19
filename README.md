@@ -1,4 +1,4 @@
-
+# Ophal OAuth2 module
 
 ## Installation
 
@@ -63,3 +63,8 @@ settings.oauth2 = {
   },
 }
 ```
+
+## Credits
+
+Facebook support is inspired on the wonderful [fboauth](https://www.drupal.org/project/fboauth) Drupal module
+by Nate Haug (quicksketch).
