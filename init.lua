@@ -213,7 +213,7 @@ end
     An access token that can be used in REST queries against Facebook's Graph
     API, which will provide us with info about the Facebook user.
 ]]
-function _M.facebook_get_authcodes(code, app_id, app_secret)
+function _M.facebook_get_authcodes(code, client_id, client_secret)
   local json = require 'dkjson'
   local https = require 'ssl.https'
   local ltn12 = require 'ltn12'
@@ -221,16 +221,16 @@ function _M.facebook_get_authcodes(code, app_id, app_secret)
   local query, token_url, authentication_values
 
   -- Use the default App ID and App Secret if not specified.
-  app_id = app_id or config.facebook.app_id
-  app_secret = app_secret or config.facebook.app_secret
+  client_id = client_id or config.facebook.client_id
+  client_secret = client_secret or config.facebook.client_secret
 
   -- Note that the "code" provided by Facebook is a hash based on the client_id,
   -- client_secret, and redirect_url. All of these things must be IDENTICAL to
   -- the same values that were passed to Facebook in the approval request. See
   -- the fboauth_link_properties function.
   query = {
-    client_id = app_id,
-    client_secret = app_secret,
+    client_id = client_id,
+    client_secret = client_secret,
     --~ auth_type = 'request',
     redirect_uri = url('oauth2/facebook/', {absolute = true}),
     code = code,
@@ -376,7 +376,7 @@ function _M.facebook_callback()
 
   if _GET.error then
     output.error = t('User has denied to allow access.')
-  elseif not empty(_GET.code) and config.facebook.app_id and config.facebook.app_secret then
+  elseif not empty(_GET.code) and config.facebook.client_id and config.facebook.client_secret then
     local res = _M.facebook_get_authcodes(_GET.code)
     if res and not empty(res.access_token) then
       _SESSION.oauth2.facebook = res
@@ -456,7 +456,7 @@ function theme.oauth2_facebook_connect_link(variables)
 
   local base_url = 'https://www.facebook.com/v2.3/dialog/oauth'
   local params = {
-    client_id = config.facebook.app_id,
+    client_id = config.facebook.client_id,
     redirect_uri = url('oauth2/facebook/', {absolute = true}),
     scope = variables.scope and variables.scope or 'email,user_friends',
   }
