@@ -188,8 +188,6 @@ function _M.google_get_token(resource, user_id)
   end
 end
 
-
-
 function _M.facebook_api_path(path)
   return 'https://graph.facebook.com/' .. (config.facebook.api_version or 'v2.3') .. (path or '')
 end
@@ -239,7 +237,7 @@ function _M.facebook_get_authcodes(code, app_id, app_secret)
   }
 
   token_url = _M.facebook_api_path('/oauth/access_token') .. '?' .. _M.build_params(query)
-debug.log(token_url)
+
   for i = 1, 5 do
     local response = xtable()
     local r, c, h, s = https.request{
@@ -363,7 +361,6 @@ end
 --[[ Save a Ophal User ID to Facebook ID pairing.
 ]]
 function _M.facebook_save_user(user_id, fb_id)
-debug.log{user_id, fb_id}
   if not empty(user_id) and not empty(fb_id) then
     -- Delete the existing Facebook ID if present for this Drupal user and
     -- make sure no other Ophal account is connected with this Facebook ID.
