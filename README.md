@@ -52,8 +52,8 @@ Add the following to settings.lua:
 
 ```Lua
 settings.oauth2 = {
-  nonce_ttl = 2*60, -- default: 2 minutes
   google = {
+    nonce_ttl = 2*60, -- default: 2 minutes
     client_id = [g_client_id],
     client_secret = [g_client_secret],
   },
