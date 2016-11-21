@@ -13,6 +13,8 @@ CREATE TABLE oauth2_google_token(id VARCHAR(255) PRIMARY KEY, access_token VARCH
 CREATE UNIQUE INDEX uidx_oauth2_google_token_ru ON oauth2_google_token(resource, user_id);
 CREATE INDEX idx_oauth2_google_token_user_id ON oauth2_google_token(user_id);
 CREATE INDEX idx_oauth2_google_token_rucct ON oauth2_google_token(resource, user_id, created, changed, ttl);
+CREATE TABLE oauth2_google_users(g_id CHAR(21), user_id UNSIGNED BIG INT, created UNSIGNED BIG INT);
+CREATE UNIQUE INDEX uidx_oauth2_token_gu ON oauth2_google_users(g_id, user_id);
 ```
 
 ```SQL
@@ -22,6 +24,8 @@ CREATE TABLE oauth2_google_token(id varchar(255) PRIMARY KEY NOT NULL, access_to
 CREATE UNIQUE INDEX uidx_oauth2_google_token_ru ON oauth2_google_token USING btree (resource COLLATE pg_catalog."default", user_id);
 CREATE INDEX idx_oauth2_google_token_user_id ON oauth2_google_token USING btree (user_id);
 CREATE INDEX idx_oauth2_google_token_rucct ON oauth2_google_token USING btree (resource COLLATE pg_catalog."default", user_id, created, changed, ttl);
+CREATE TABLE oauth2_google_users(g_id CHAR(21) NOT NULL, user_id BIGINT NOT NULL, created BIGINT NOT NULL);
+CREATE UNIQUE INDEX uidx_oauth2_token_gu ON oauth2_google_users USING btree (g_id, user_id);
 ```
 
 ### Facebook
@@ -53,9 +57,10 @@ Add the following to settings.lua:
 ```Lua
 settings.oauth2 = {
   google = {
-    nonce_ttl = 2*60, -- default: 2 minutes
     client_id = [g_client_id],
     client_secret = [g_client_secret],
+    nonce_ttl = 2*60, -- default: 2 minutes
+    api_version = 'v4', -- default
   },
   facebook = {
     client_id = [fb_client_id],

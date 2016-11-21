@@ -42,6 +42,10 @@ function _M.route()
   return items
 end
 
+function _M.google_api_path(path)
+  return 'https://www.googleapis.com/oauth2/' .. (config.google.api_version or 'v4') .. (path or '')
+end
+
 function _M.google_valid_nonce(nonce)
   local rs = db_query('SELECT COUNT(*) total FROM oauth2_google_nonce WHERE id = ? AND ? <= created + ?', nonce, time(), config.google.nonce_ttl or 2*60)
   local count = rs:fetch(true)
@@ -73,53 +77,237 @@ function _M.google_get_resource(id)
   end
 end
 
-function _M.google_get_authcodes(code)
+function _M.google_get_authcodes(code, client_id, client_secret)
   local json = require 'dkjson'
   local https = require 'ssl.https'
   local ltn12 = require 'ltn12'
-  local body = _M.build_params{
+  local authentication_result = {}
+  local body, token_url, authentication_values
+
+  -- Use the default App ID and App Secret if not specified.
+  client_id = client_id or config.google.client_id
+  client_secret = client_secret or config.google.client_secret
+
+  -- Note that the "code" provided by Google is a hash based on the client_id,
+  -- client_secret, and redirect_url. All of these things must be IDENTICAL to
+  -- the same values that were passed to Google in the approval request.
+  body = _M.build_params{
     code = code,
-    client_id = config.google.client_id,
-    client_secret = config.google.client_secret,
-    redirect_uri = ('%s://%s/oauth2/callback'):format(site.scheme or 'http', _SERVER 'SERVER_NAME'),
+    client_id = client_id,
+    client_secret = client_secret,
+    redirect_uri = url('oauth2/google/', {absolute = true}),
     grant_type = 'authorization_code',
   }
-  local response = {}
-  local request = {
-    url = 'https://www.googleapis.com/oauth2/v3/token',
-    method = 'POST',
-    headers = {
-      ['content-length'] = #body,
-      ['content-type'] = 'application/x-www-form-urlencoded',
-    },
-    source = ltn12.source.string(body),
-    sink = ltn12.sink.table(response),
-  }
-  local s, c, h, hs = https.request(request)
 
-  if c == 200 then
-    local response = xtable(response):concat()
-    return json.decode(response)
+  token_url = _M.google_api_path '/token'
+
+  for i = 1, 5 do
+    local response = xtable()
+    local r, c, h, s = https.request{
+      url = token_url,
+      method = 'POST',
+      headers = {
+	['content-length'] = #body,
+	['content-type'] = 'application/x-www-form-urlencoded',
+      },
+      source = ltn12.source.string(body),
+      sink = ltn12.sink.table(response),
+    }
+    authentication_result.res 	  = r
+    authentication_result.code 	  = c
+    authentication_result.headers = h
+    authentication_result.status  = s
+    authentication_result.data    = response:concat()
+
+    if authentication_result.code == 200 then
+      break
+    end
+    -- Google access code generation seems to take a lot of time. That's why we have to wait
+    -- some seconds before the code can be acquired.
+    sleep(1)
+  end
+
+  if 200 ~= authentication_result.code then
+    if authentication_result.data then
+      error(authentication_result.data)
+    elseif authentication_result.error then
+      error(authentication_result.error)
+    else
+      error 'Unknown error.'
+    end
+  else
+    return json.decode(authentication_result.data)
+  end
+end
+
+--[[ Execute a Google API query.
+
+  @see https://developers.google.com/identity/protocols/googlescopes
+]]
+function _M.google_api_query(api_url, access_token, params, method)
+  params = params or {}
+  method = method or 'GET'
+
+  local json = require 'dkjson'
+  local https = require 'ssl.https'
+  local ltn12 = require 'ltn12'
+  local result = {}
+  local post_data, output
+
+  if access_token then
+    params.access_token = access_token
+  end
+
+  if method == 'GET' or method == 'DELETE' then
+    local response = xtable()
+    local r, c, h, s = https.request{
+      url = api_url .. '?' .. _M.build_params(params),
+      method = 'GET',
+      sink = ltn12.sink.table(response),
+    }
+    result.res 	   = r
+    result.code	   = c
+    result.headers = h
+    result.status  = s
+    result.data    = response:concat()
+  elseif method == 'POST' then
+    post_data = _M.build_params(params)
+    local response = xtable()
+    local r, c, h, s = https.request{
+      url = api_url,
+      method = 'GET',
+      headers = {
+        ['content-length'] = #body,
+        ['content-type'] = 'application/x-www-form-urlencoded',
+      },
+      source = ltn12.source.string(body),
+      sink = ltn12.sink.table(response),
+    }
+    result.res 	   = r
+    result.code	   = c
+    result.headers = h
+    result.status  = s
+    result.data    = response:concat()
+  else
+    error 'Unsupported request method. Google supports whether GET, DELETE or POST requests.'
+  end
+
+  -- If the response contains a redirect (such as to an image), return the
+  -- redirect as the data.
+  if
+    (301 == result.code or 302 == result.code or 307 == result.code) and
+    not empty(result.headers.location)
+  then
+    output.data = {
+      data = result.data,
+      redirect_code = result.code,
+      redirect_url = result.headers.location,
+    }
+  else
+    output = json.decode(result.data)
+  end
+
+  return output
+end
+
+--[[ Return an Ophal User ID given a Facebook ID.
+]]
+function _M.google_get_user_id(g_id)
+  local rs = db_query('SELECT user_id FROM oauth2_google_users WHERE g_id = ?', g_id)
+  local row = rs:fetch(true)
+  return (row and row.user_id) and tonumber(row.user_id) or nil
+end
+
+function _M.google_login_user(account)
+  module_invoke_all('user_login', account, output)
+  _SESSION.user = account
+end
+
+--[[ Save a Ophal User ID to Facebook ID pairing.
+]]
+function _M.google_save_user(user_id, g_id)
+  if not empty(user_id) and not empty(g_id) then
+    -- Delete the existing Google ID if present for this Ophal user and
+    -- make sure no other Ophal account is connected with this Google ID.
+    db_query('DELETE FROM oauth2_google_users WHERE user_id = ? OR g_id = ?', user_id, g_id)
+
+    db_query('INSERT INTO oauth2_google_users(user_id, g_id, created) VALUES(?, ?, ?)', user_id, g_id, time())
   end
 end
 
 function _M.google_callback()
+  local output = {}
   local state = explode('|', _GET.state)
   local resource_id = state[1]
   local nonce = state[2]
+  local resource, res, g_data, user_id, account
 
-  local resource = _M.google_get_resource(resource_id)
-
-  if _M.google_valid_nonce(nonce) and not empty(resource) then
-    local res = _M.google_get_authcodes(_GET.code)
-    res.id = _GET.code
-    res.resource = resource_id
-    res.user_id = 1
-    res.ttl = res.expires_in
-    _M.google_create_authcodes(res)
+  if empty(_M.google_valid_nonce(nonce)) or empty(_GET.code) then
+    error 'ERROR: Invalid state returned.'
   end
 
-  goto(resource.path)
+  if resource_id == 'website' then
+    res = _M.google_get_authcodes(_GET.code)
+    if res and not empty(res.access_token) then
+      _SESSION.oauth2.google = res
+
+      g_data = _M.google_api_query('https://www.googleapis.com/oauth2/v2/userinfo', res.access_token)
+
+      module_invoke_all('oauth2_google_login', g_data)
+
+      -- Use fake email if user email not available.
+      if empty(g_data.email) then
+	g_data.email = g_data.id .. '@google.com'
+      end
+
+      user_id = _M.google_get_user_id(g_data.id)
+
+      if empty(user_id) then
+	-- Lookup user from email address
+	account = user_mod.load_by_field('mail', g_data.email)
+
+	if account then
+	  user_id = account.id
+	else
+	  user_id = user_mod.create{name = g_data.name,
+	    mail = g_data.email,
+	    pass = '',
+	    active = true,
+	  }
+	end
+      end
+
+      if not empty(user_id) then
+	_M.facebook_login_user(user_mod.load(user_id))
+	_SESSION.oauth2.google.data = g_data
+      else
+	error 'ERROR: Can not create requested user account.'
+      end
+
+      if user_mod.is_logged_in() then
+	-- The user is already logged in to Ophal.
+	-- So just associate the two accounts.
+	_M.google_save_user(user_mod.current().id, g_data.id)
+      else
+	error 'ERROR: Authentication failed!'
+      end
+
+      goto()
+    end
+  else
+    resource = _M.google_get_resource(resource_id)
+
+    if empty(resource) then
+      res = _M.google_get_authcodes(_GET.code)
+      res.id = _GET.code
+      res.resource = resource_id
+      res.user_id = 1
+      res.ttl = res.expires_in
+      _M.google_create_authcodes(res)
+    end
+
+    goto(resource.path)
+  end
 
   return ''
 end
@@ -153,7 +341,7 @@ function _M.google_refresh_authcodes(id)
     }
     local response = {}
     local request = {
-      url = 'https://www.googleapis.com/oauth2/v3/token',
+      url = _M.google_api_path '/token',
       method = 'POST',
       headers = {
         ['content-length'] = #body,
@@ -449,6 +637,36 @@ function theme.oauth2_google_connect(variables)
   local connect_url = base_url .. '/auth?' .. _M.build_params(params)
 
   return l('Connect to Google API', connect_url, {external = true})
+end
+
+function theme.oauth2_google_connect_link(variables)
+  local variables = variables or {}
+
+  local base_url = 'https://accounts.google.com/o/oauth2'
+  local params = {
+    client_id = config.google.client_id,
+    redirect_uri = url('oauth2/google/', {absolute = true}),
+    scope = config.google.scope or 'profile email',
+    state = _M.google_get_nonce 'website',
+    response_type = 'code',
+    access_type = 'offline',
+    prompt = 'select_account',
+    include_granted_scopes = 'true',
+  }
+
+  local connect_url = base_url .. '/auth?' .. _M.build_params(params)
+
+  local options = {
+    external = true,
+  }
+  for k, v in pairs(variables.options or {}) do
+    options[k] = v
+  end
+
+  return l(
+    variables.label and variables.label or 'Connect to Google',
+    connect_url, options
+  )
 end
 
 function theme.oauth2_facebook_connect_link(variables)
