@@ -378,7 +378,7 @@ function _M.google_get_token(resource, user_id)
 end
 
 function _M.facebook_api_path(path)
-  return 'https://graph.facebook.com/' .. (config.facebook.api_version or 'v2.3') .. (path or '')
+  return 'https://graph.facebook.com/' .. (config.facebook.api_version or 'v2.4') .. (path or '')
 end
 
 function _M.facebook_get_nonce()
@@ -691,7 +691,7 @@ end
 function theme.oauth2_facebook_connect_link(variables)
   local variables = variables or {}
 
-  local base_url = 'https://www.facebook.com/v2.3/dialog/oauth'
+  local base_url = 'https://www.facebook.com/' .. (config.facebook.api_version or 'v2.4') .. '/dialog/oauth'
   local params = {
     client_id = config.facebook.client_id,
     redirect_uri = url('oauth2/facebook/', {absolute = true}),

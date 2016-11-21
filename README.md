@@ -66,6 +66,7 @@ settings.oauth2 = {
     client_id = [fb_client_id],
     client_secret = [fb_client_secret],
     nonce_ttl = 2*60, -- default: 2 minutes
+    api_version = 'v2.4', -- default
   },
 }
 ```
