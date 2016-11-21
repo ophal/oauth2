@@ -594,6 +594,8 @@ function _M.facebook_callback()
 	fb_data = _M.facebook_graph_query(id, res.access_token)
       end
 
+      module_invoke_all('oauth2_facebook_login', fb_data)
+
       -- Use fake email if user email not available.
       if empty(fb_data.email) then
 	fb_data.email = fb_data.id .. '@facebook.com'
