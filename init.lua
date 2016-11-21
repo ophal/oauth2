@@ -589,7 +589,7 @@ function _M.facebook_callback()
 
       local id = 'me' -- Versions prior to v2.4 and v2.5 are working with just this.
       if 'v2.4' == config.facebook.api_version or 'v2.5' == config.facebook.api_version then
-	fb_data = _M.facebook_graph_query(id, res.access_token, {fields = 'email,name,first_name,last_name,age_range,link,gender,locale,timezone,updated_time,verified,birthday,location'})
+	fb_data = _M.facebook_graph_query(id, res.access_token, {fields = config.facebook.fields or 'email,name'})
       else
 	fb_data = _M.facebook_graph_query(id, res.access_token)
       end
@@ -693,7 +693,7 @@ function theme.oauth2_facebook_connect_link(variables)
   local params = {
     client_id = config.facebook.client_id,
     redirect_uri = url('oauth2/facebook/', {absolute = true}),
-    scope = variables.scope and variables.scope or 'email,user_friends',
+    scope = config.facebook.scope,
     state = _M.facebook_get_nonce(),
   }
 
