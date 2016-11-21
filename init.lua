@@ -430,8 +430,7 @@ function _M.facebook_get_authcodes(code, client_id, client_secret)
 
   -- Note that the "code" provided by Facebook is a hash based on the client_id,
   -- client_secret, and redirect_url. All of these things must be IDENTICAL to
-  -- the same values that were passed to Facebook in the approval request. See
-  -- the fboauth_link_properties function.
+  -- the same values that were passed to Facebook in the approval request.
   query = {
     client_id = client_id,
     client_secret = client_secret,
@@ -531,7 +530,7 @@ function _M.facebook_graph_query(id, access_token, params, method)
   end
 
   -- If the response contains a redirect (such as to an image), return the
-  -- redirect as the data. i.e. https://graph.facebook.com/v2.3/19292868552/picture.
+  -- redirect as the data.
   if
     (301 == graph_result.code or 302 == graph_result.code or 307 == graph_result.code) and
     not empty(graph_result.headers.location)
@@ -561,12 +560,11 @@ function _M.facebook_login_user(account)
   _SESSION.user = account
 end
 
-
 --[[ Save a Ophal User ID to Facebook ID pairing.
 ]]
 function _M.facebook_save_user(user_id, fb_id)
   if not empty(user_id) and not empty(fb_id) then
-    -- Delete the existing Facebook ID if present for this Drupal user and
+    -- Delete the existing Facebook ID if present for this Ophal user and
     -- make sure no other Ophal account is connected with this Facebook ID.
     db_query('DELETE FROM oauth2_facebook_users WHERE user_id = ? OR fb_id = ?', user_id, fb_id)
 
@@ -625,7 +623,7 @@ function _M.facebook_callback()
       end
 
       if user_mod.is_logged_in() then
-	-- The user is already logged in to Drupal.
+	-- The user is already logged in to Ophal.
 	-- So just associate the two accounts.
 	_M.facebook_save_user(user_mod.current().id, fb_data.id)
       else
