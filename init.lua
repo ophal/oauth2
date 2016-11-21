@@ -620,6 +620,7 @@ function _M.facebook_callback()
 
       if not empty(user_id) then
 	_M.facebook_login_user(user_mod.load(user_id))
+	_SESSION.oauth2.facebook.data = fb_data
       else
 	error 'ERROR: Can not create requested user account.'
       end
