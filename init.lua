@@ -10,6 +10,7 @@ local explode, env, tonumber = seawolf.text.explode, env, tonumber
 local empty, goto, site = seawolf.variable.empty, goto, settings.site
 local header, route_arg, sleep = header, route_arg, socket.sleep
 local request_uri, escape = request_uri, socket.url.escape
+local string = string
 local _SESSION = _SESSION
 local db_query, user_mod
 
@@ -588,7 +589,11 @@ function _M.facebook_callback()
       _SESSION.oauth2.facebook = res
 
       local id = 'me' -- Versions prior to v2.4 and v2.5 are working with just this.
-      if 'v2.4' == config.facebook.api_version or 'v2.5' == config.facebook.api_version then
+      local _, _, major, minor = string.find(config.facebook.api_version, 'v(%d+)%.(%d+)')
+      major = tonumber(major)
+      minor = tonumber(minor)
+
+      if major == 2 and minor >= 4 then
 	fb_data = _M.facebook_graph_query(id, res.access_token, {fields = config.facebook.fields or 'email,name'})
       else
 	fb_data = _M.facebook_graph_query(id, res.access_token)
