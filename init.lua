@@ -3,14 +3,14 @@ local _M = {
 }
 ophal.modules.oauth2 = _M
 
-local seawolf = require 'seawolf'.__build('contrib', 'text')
+local seawolf = require 'seawolf'.__build('contrib', 'text', 'other')
 local config = settings.oauth2
 local xtable, time, base = seawolf.contrib.seawolf_table, os.time, base
 local explode, env, tonumber = seawolf.text.explode, env, tonumber
 local empty, goto, site = seawolf.variable.empty, goto, settings.site
 local header, route_arg, sleep = header, route_arg, socket.sleep
 local request_uri, escape = request_uri, socket.url.escape
-local string = string
+local hash_hmac, string = seawolf.other.hash_hmac, string
 local _SESSION = _SESSION
 local db_query, user_mod
 
@@ -492,6 +492,9 @@ function _M.facebook_graph_query(id, access_token, params, method)
 
   if access_token then
     params.access_token = access_token
+    if config.facebook.secret_required then
+      params.appsecret_proof = hash_hmac('sha256', access_token, config.facebook.client_secret)
+    end
   end
 
   if method == 'GET' or method == 'DELETE' then
