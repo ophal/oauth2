@@ -222,7 +222,7 @@ end
 
 function _M.google_login_user(account)
   module_invoke_all('user_login', account, output)
-  _SESSION.user = account
+  _SESSION.user_id = account.id
 end
 
 --[[ Save a Ophal User ID to Facebook ID pairing.
@@ -561,7 +561,7 @@ end
 
 function _M.facebook_login_user(account)
   module_invoke_all('user_login', account, output)
-  _SESSION.user = account
+  _SESSION.user_id = account.id
 end
 
 --[[ Save a Ophal User ID to Facebook ID pairing.
