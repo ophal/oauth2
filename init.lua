@@ -109,14 +109,14 @@ function _M.google_get_authcodes(code, client_id, client_secret)
       url = token_url,
       method = 'POST',
       headers = {
-	['content-length'] = #body,
-	['content-type'] = 'application/x-www-form-urlencoded',
+        ['content-length'] = #body,
+        ['content-type'] = 'application/x-www-form-urlencoded',
       },
       source = ltn12.source.string(body),
       sink = ltn12.sink.table(response),
     }
-    authentication_result.res 	  = r
-    authentication_result.code 	  = c
+    authentication_result.res     = r
+    authentication_result.code    = c
     authentication_result.headers = h
     authentication_result.status  = s
     authentication_result.data    = response:concat()
@@ -167,8 +167,8 @@ function _M.google_api_query(api_url, access_token, params, method)
       method = 'GET',
       sink = ltn12.sink.table(response),
     }
-    result.res 	   = r
-    result.code	   = c
+    result.res     = r
+    result.code    = c
     result.headers = h
     result.status  = s
     result.data    = response:concat()
@@ -185,8 +185,8 @@ function _M.google_api_query(api_url, access_token, params, method)
       source = ltn12.source.string(body),
       sink = ltn12.sink.table(response),
     }
-    result.res 	   = r
-    result.code	   = c
+    result.res     = r
+    result.code    = c
     result.headers = h
     result.status  = s
     result.data    = response:concat()
@@ -259,39 +259,39 @@ function _M.google_callback()
 
       -- Use fake email if user email not available.
       if empty(g_data.email) then
-	g_data.email = g_data.id .. '@google.com'
+        g_data.email = g_data.id .. '@google.com'
       end
 
       user_id = _M.google_get_user_id(g_data.id)
 
       if empty(user_id) then
-	-- Lookup user from email address
-	account = user_mod.load_by_field('mail', g_data.email)
+        -- Lookup user from email address
+        account = user_mod.load_by_field('mail', g_data.email)
 
-	if account then
-	  user_id = account.id
-	else
-	  user_id = user_mod.create{name = g_data.name,
-	    mail = g_data.email,
-	    pass = '',
-	    active = true,
-	  }
-	end
+        if account then
+          user_id = account.id
+        else
+          user_id = user_mod.create{name = g_data.name,
+            mail = g_data.email,
+            pass = '',
+            active = true,
+          }
+        end
       end
 
       if not empty(user_id) then
-	_M.facebook_login_user(user_mod.load(user_id))
-	_SESSION.oauth2.google.data = g_data
+        _M.facebook_login_user(user_mod.load(user_id))
+        _SESSION.oauth2.google.data = g_data
       else
-	error 'ERROR: Can not create requested user account.'
+        error 'ERROR: Can not create requested user account.'
       end
 
       if user_mod.is_logged_in() then
-	-- The user is already logged in to Ophal.
-	-- So just associate the two accounts.
-	_M.google_save_user(user_mod.current().id, g_data.id)
+        -- The user is already logged in to Ophal.
+        -- So just associate the two accounts.
+        _M.google_save_user(user_mod.current().id, g_data.id)
       else
-	error 'ERROR: Authentication failed!'
+        error 'ERROR: Authentication failed!'
       end
 
       goto()
@@ -449,8 +449,8 @@ function _M.facebook_get_authcodes(code, client_id, client_secret)
       method = 'GET',
       sink = ltn12.sink.table(response),
     }
-    authentication_result.res 	  = r
-    authentication_result.code 	  = c
+    authentication_result.res     = r
+    authentication_result.code    = c
     authentication_result.headers = h
     authentication_result.status  = s
     authentication_result.data    = response:concat()
@@ -505,8 +505,8 @@ function _M.facebook_graph_query(id, access_token, params, method)
       method = 'GET',
       sink = ltn12.sink.table(response),
     }
-    graph_result.res 	 = r
-    graph_result.code 	 = c
+    graph_result.res     = r
+    graph_result.code    = c
     graph_result.headers = h
     graph_result.status  = s
     graph_result.data    = response:concat()
@@ -524,8 +524,8 @@ function _M.facebook_graph_query(id, access_token, params, method)
       source = ltn12.source.string(body),
       sink = ltn12.sink.table(response),
     }
-    graph_result.res 	 = r
-    graph_result.code 	 = c
+    graph_result.res     = r
+    graph_result.code    = c
     graph_result.headers = h
     graph_result.status  = s
     graph_result.data    = response:concat()
@@ -597,48 +597,48 @@ function _M.facebook_callback()
       minor = tonumber(minor)
 
       if major == 2 and minor >= 4 then
-	fb_data = _M.facebook_graph_query(id, res.access_token, {fields = config.facebook.fields or 'email,name'})
+        fb_data = _M.facebook_graph_query(id, res.access_token, {fields = config.facebook.fields or 'email,name'})
       else
-	fb_data = _M.facebook_graph_query(id, res.access_token)
+        fb_data = _M.facebook_graph_query(id, res.access_token)
       end
 
       module_invoke_all('oauth2_facebook_login', fb_data)
 
       -- Use fake email if user email not available.
       if empty(fb_data.email) then
-	fb_data.email = fb_data.id .. '@facebook.com'
+        fb_data.email = fb_data.id .. '@facebook.com'
       end
 
       user_id = _M.facebook_get_user_id(fb_data.id)
 
       if empty(user_id) then
-	-- Lookup user from email address
-	account = user_mod.load_by_field('mail', fb_data.email)
+        -- Lookup user from email address
+        account = user_mod.load_by_field('mail', fb_data.email)
 
-	if account then
-	  user_id = account.id
-	else
-	  user_id = user_mod.create{name = fb_data.name,
-	    mail = fb_data.email,
-	    pass = '',
-	    active = true,
-	  }
-	end
+        if account then
+          user_id = account.id
+        else
+          user_id = user_mod.create{name = fb_data.name,
+            mail = fb_data.email,
+            pass = '',
+            active = true,
+          }
+        end
       end
 
       if not empty(user_id) then
-	_M.facebook_login_user(user_mod.load(user_id))
-	_SESSION.oauth2.facebook.data = fb_data
+        _M.facebook_login_user(user_mod.load(user_id))
+        _SESSION.oauth2.facebook.data = fb_data
       else
-	error 'ERROR: Can not create requested user account.'
+        error 'ERROR: Can not create requested user account.'
       end
 
       if user_mod.is_logged_in() then
-	-- The user is already logged in to Ophal.
-	-- So just associate the two accounts.
-	_M.facebook_save_user(user_mod.current().id, fb_data.id)
+        -- The user is already logged in to Ophal.
+        -- So just associate the two accounts.
+        _M.facebook_save_user(user_mod.current().id, fb_data.id)
       else
-	error 'ERROR: Authentication failed!'
+        error 'ERROR: Authentication failed!'
       end
 
       goto()
